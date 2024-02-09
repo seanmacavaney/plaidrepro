@@ -62,7 +62,7 @@ class Checkpoint(ColBERT):
                 returned_text = [returned_text]
 
             keep_dims_ = 'return_mask' if keep_dims == 'flatten' else keep_dims
-            batches = [self.doc(input_ids, attention_mask, keep_dims=keep_dims_, to_cpu=to_cpu)
+            batches = [(self.doc(input_ids, attention_mask, keep_dims=keep_dims_, to_cpu=to_cpu), input_ids, attention_mask)
                        for input_ids, attention_mask in tqdm(text_batches, disable=not showprogress)]
 
             if keep_dims is True:
@@ -70,18 +70,24 @@ class Checkpoint(ColBERT):
                 return (D[reverse_indices], *returned_text)
 
             elif keep_dims == 'flatten':
-                D, mask = [], []
+                D, mask, ids = [], [], []
 
-                for D_, mask_ in batches:
+                for (D_, mask_), input_ids, attention_mask in batches:
                     D.append(D_)
                     mask.append(mask_)
+                    ids.append(input_ids)
 
-                D, mask = torch.cat(D)[reverse_indices], torch.cat(mask)[reverse_indices]
+                D, mask, ids = torch.cat(D)[reverse_indices], torch.cat(mask)[reverse_indices], torch.cat(ids)[reverse_indices]
 
                 doclens = mask.squeeze(-1).sum(-1).tolist()
 
                 D = D.view(-1, self.colbert_config.dim)
                 D = D[mask.bool().flatten()].cpu()
+                ids = ids.flatten()[mask.bool().flatten().cpu()].tolist()
+                import json
+                with open('ids.jsonl', 'at') as fout:
+                    json.dump(ids, fout)
+                    fout.write('\n')
 
                 return (D, doclens, *returned_text)
 

@@ -120,6 +120,7 @@ class CollectionIndexer():
         sampled_pids = 16 * np.sqrt(typical_doclen * num_passages)
         # sampled_pids = int(2 ** np.floor(np.log2(1 + sampled_pids)))
         sampled_pids = min(1 + int(sampled_pids), num_passages)
+        sampled_pids = 1000
 
         sampled_pids = random.sample(range(num_passages), sampled_pids)
         Run().print_main(f"# of sampled PIDs = {len(sampled_pids)} \t sampled_pids[:3] = {sampled_pids[:3]}")
@@ -270,7 +271,8 @@ class CollectionIndexer():
 
         do_fork_for_faiss = False  # set to True to free faiss GPU-0 memory at the cost of one more copy of `sample`.
 
-        args_ = [self.config.dim, self.num_partitions, self.config.kmeans_niters]
+        #args_ = [self.config.dim, self.num_partitions, self.config.kmeans_niters]
+        args_ = [self.config.dim, 500, self.config.kmeans_niters]
 
         if do_fork_for_faiss:
             # For this to work reliably, write the sample to disk. Pickle may not handle >4GB of data.
